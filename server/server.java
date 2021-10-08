@@ -2,9 +2,6 @@
 import java.io.* ;
 import java.net.* ;
 import javax.swing.*;
-
-import jdk.internal.net.http.ResponseBodyHandlers.FileDownloadBodyHandler;
-
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.color.*;
@@ -107,7 +104,12 @@ public final class server{
         frame.getContentPane().add(BorderLayout.NORTH, panel3);
         frame.getContentPane().add(BorderLayout.CENTER, board);
         
-        
+        disconnect.addActionListener((new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent e){
+                frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
+            }
+        }));
         //adding action to post button
         post.addActionListener(new ActionListener() {
 
