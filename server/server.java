@@ -1,16 +1,44 @@
 
 import java.io.* ;
 import java.net.* ;
+import java.util.ArrayList;
+
 import javax.swing.*;
+
+// import jdk.internal.net.http.ResponseBodyHandlers.FileDownloadBodyHandler;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.color.*;
 public final class server{
+    public static class Note{
+        int x;
+        int y; 
+        int width;
+        int height;
+        String colour;
+        String message;
+        boolean pinned;
+        JTextArea notes;
+        public Note(int x, int y, int width, int height, String colour,String message, boolean pinned, JTextArea notes){
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.colour = colour;
+            this.message = message;
+            this.pinned = pinned;
+            this.notes = notes;
+        }
+        
+    }
+
     public static void main(String argv[]) throws Exception {
         //initializing values
         int port = 0;
         int b_width = 0;
         int b_height = 0;
+        ArrayList<Note> board_list = new ArrayList<Note>(); 
         String colour[] = new String[argv.length - 3];
 
         //taking input from client/ error handle
@@ -104,12 +132,7 @@ public final class server{
         frame.getContentPane().add(BorderLayout.NORTH, panel3);
         frame.getContentPane().add(BorderLayout.CENTER, board);
         
-        disconnect.addActionListener((new ActionListener(){
-            @Override
-            public void actionPerformed(ActionEvent e){
-                frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
-            }
-        }));
+        
         //adding action to post button
         post.addActionListener(new ActionListener() {
 
@@ -119,28 +142,21 @@ public final class server{
                 String cmd[] = command.split(" ");
                 System.out.println(cmd[0]);
                 int x = Integer.parseInt(cmd[0]);
-                System.out.println(x);
                 int y = Integer.parseInt(cmd[1]);
-                System.out.println(y);
                 int w = Integer.parseInt(cmd[2]);
-                System.out.println(w);
                 int h = Integer.parseInt(cmd[3]);
-                System.out.println(h);
+
                 String col = cmd[4];
-                System.out.println(col);
                 String msg = "";
                 for(int i = 5; i<=cmd.length-1; i++){
                     msg = msg + cmd[i] + " ";
                 }
-                System.out.println(msg);
-                JTextArea postit = new JTextArea();
-                System.out.println("size: "+ postit.getSize());
-                System.out.println("size: "+ postit.getSize());
 
-                postit.setText(msg);
+
+                JTextArea postit = new JTextArea();
+                postit.setText(msg + "\n");
                 postit.setBounds(x,y,w,h);
-                System.out.println("7"+col+"7");
-                System.out.println(col.toLowerCase().equals("red"));
+
                 if (col.toLowerCase().equals("black")){
                     postit.setBackground(Color.black);
                 }else if (col.toLowerCase().equals("blue")){
@@ -164,11 +180,149 @@ public final class server{
                 }else if (col.toLowerCase().equals("yellow")){
                     postit.setBackground(Color.yellow);
                 }
+
                 board.add(postit);
+                Note note = new Note(x,y,w,h, col, msg, false, postit);
+                board_list.add(note);
+                // // For debugging
+                // for(Note n: board_list){
+                //     System.out.println(n.message);
+                // }
+                // //
                 frame.setVisible(true);
                 //postit.setVisible(true);
             }
         });
+        
+        disconnect.addActionListener((new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent e){
+                frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
+            }
+        }));
+
+        get.addActionListener((new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent e){
+                //getting command
+                String command = tf.getText();
+                String cmd[] = command.split("=");
+                //initializing variables
+                String find_col = "";
+                int x = -1;
+                int y = -1;
+                String msg = "";
+                String[] coordinates;
+                //getting each user request
+                for(int i = 0; i<cmd.length; i++){
+                    if(cmd[i].trim().toLowerCase().equals("color")){
+                        find_col = find_col + cmd[i+1].trim().toLowerCase();
+                    }else if(cmd[i].trim().toLowerCase().equals("contains")){
+                        
+                        coordinates = cmd[i+1].trim().split(" ");
+
+                        x = Integer.parseInt(coordinates[0].trim());
+                        y = Integer.parseInt(coordinates[1].trim());
+                        System.out.println(x);
+                        System.out.println(y);
+                    }else if(cmd[i].trim().toLowerCase().equals("refersto")){
+                        msg = msg + cmd[i+1];
+                    }
+                }
+                //comparing user request to notes on board, then removing notes that do not correlate to request
+                for(Note n: board_list){
+
+                    System.out.println("msg"+ msg);
+                    System.out.println(n.message.contains(msg));
+                    //System.out.println(!(n.x == x) && !(n.y == y));
+                    if (find_col.equals("") == false){
+                        if(n.colour.equals(find_col) == false){
+                            n.notes.setVisible(false);
+                        }
+                    }if(x != -1 && y!= -1){
+                        if(n.x != x){
+                            if(n.y != y){
+                                n.notes.setVisible(false);
+                            }
+                        }
+                    }if(msg.equals("")==false){
+                        if(n.message.contains(msg) == false){
+                            n.notes.setVisible(false);
+                        }
+                    }
+                }
+                //
+            }
+        }));
+        pin.addActionListener((new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent e){
+                String str_coordinates = tf.getText();
+                String lst_coordinates[];
+                int x;
+                int y;
+
+                lst_coordinates = str_coordinates.split(",");
+                x = Integer.parseInt(lst_coordinates[0].trim());
+                y = Integer.parseInt(lst_coordinates[1].trim());
+
+                for(Note n: board_list){
+                    if(n.x == x && n.y == y){
+                        n.pinned = true;
+                        n.notes.append("*");
+                    }
+                }
+
+            }
+        }));
+        unpin.addActionListener((new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent e){
+                String str_coordinates = tf.getText();
+                String lst_coordinates[];
+                int x;
+                int y;
+                String message = "";
+                String message2 = "";
+
+                lst_coordinates = str_coordinates.split(",");
+                x = Integer.parseInt(lst_coordinates[0].trim());
+                y = Integer.parseInt(lst_coordinates[1].trim());
+
+                for(Note n: board_list){
+                    if(n.x == x && n.y == y){
+                        n.pinned = false;
+                        message = message + n.notes.getText();
+                        message2 = message.substring(0,message.length()-1);
+                        n.notes.setText(message2);
+                    }
+                }
+            }
+        }));
+
+        clear.addActionListener((new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent e){
+                for(Note n: board_list){
+                    n.notes.setVisible(false);
+                }
+                board_list.clear();
+            }
+        }));
+
+
+        shake.addActionListener((new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent e){
+                for(Note n: board_list){
+                    if(n.pinned == false){
+                        n.notes.setVisible(false);
+                        board_list.remove(n);
+                    }
+                }
+            }
+        }));
+
         frame.setVisible(true);
     }    
 }
